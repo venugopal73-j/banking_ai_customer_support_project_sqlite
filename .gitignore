@@ -1,0 +1,16 @@
+# Ignore environment variables
+.env
+*.env
+
+# Ignore Python cache and compiled files
+*.pyc
+__pycache__/
+
+# Ignore database files
+*.db
+*.sqlite
+
+# Ignore log files
+*.log
+
+.streamlit/secrets.toml
