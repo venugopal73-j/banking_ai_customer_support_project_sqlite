@@ -5,7 +5,6 @@ from agents.feedback_handler import FeedbackHandlerAgent
 from agents.query_handler import QueryHandlerAgent
 import pandas as pd
 from dotenv import load_dotenv
-from agents import TicketManager
 from agents.ticket_manager import initialize_database
 
 
