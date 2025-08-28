@@ -25,10 +25,17 @@ class TicketManager:
 
     def get_ticket_history(self):
         rows = list(self.table.rows)
+        
+        # Safely sort by 'id'
         sorted_rows = sorted(rows, key=lambda x: x.get("id", 0), reverse=True)
 
+        # Add 'ticket_id' field for display purposes
         for row in sorted_rows:
-            row["ticket_id"] = 100000 + row["id"]
+            if "id" in row:
+                row["ticket_id"] = 100000 + row["id"]
+            else:
+                row["ticket_id"] = "UNKNOWN"
+
         return sorted_rows
     def get_ticket_by_customer_id(self, customer_ticket_id):
         actual_id = customer_ticket_id - 100000
