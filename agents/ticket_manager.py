@@ -3,6 +3,8 @@
 from datetime import datetime
 from sqlite_utils import Database
 import os
+import sqlite3
+
 
 class TicketManager:
     def __init__(self, db_path="tickets.db"):
@@ -22,6 +24,21 @@ class TicketManager:
 
         ticket_row = self.table.last_pk
         return 100000 + ticket_row if ticket_row else "UNKNOWN"
+    def initialize_database(db_path="tickets.db"):
+      if not os.path.exists(db_path):
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS tickets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                message TEXT,
+                category TEXT,
+                created_at TEXT,
+                status TEXT
+            )
+        """)
+        conn.commit()
+        conn.close()
 
     def get_ticket_history(self):
         rows = list(self.table.rows)
