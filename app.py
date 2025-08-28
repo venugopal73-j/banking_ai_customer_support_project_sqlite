@@ -44,16 +44,42 @@ if st.button("Submit"):
         else:
             st.error("❗ Unable to classify message. Please try again.")
 
-# Ticket history
+def get_ticket_history(self):
+    rows = list(self.table.rows)
+
+    # Sort safely by ID
+    sorted_rows = sorted(rows, key=lambda x: x.get("id", 0), reverse=True)
+
+    # Ensure 'ticket_id' is added for display (derived from internal ID)
+    for row in sorted_rows:
+        if "id" in row:
+            row["ticket_id"] = 100000 + row["id"]
+        else:
+            row["ticket_id"] = "UNKNOWN"
+
+    return sorted_rows
 st.markdown("---")
 if st.checkbox("Show Ticket History (from DB)"):
-    history = query_handler.get_ticket_history()
-    if not history:
-        st.info("No tickets found.")
-    else:
-        df = pd.DataFrame(history)
-        st.dataframe(df)
-st.markdown("---")
+    try:
+        history = query_handler.get_ticket_history()
+        if not history:
+            st.info("No tickets found.")
+        else:
+            # Convert to DataFrame safely
+            df = pd.DataFrame(history)
+
+            # Reorder and rename columns for clarity (optional)
+            expected_columns = ['ticket_id', 'message', 'category', 'status', 'created_at']
+            for col in expected_columns:
+                if col not in df.columns:
+                    df[col] = "N/A"  # fill missing columns
+
+            df = df[expected_columns]
+            df = df.sort_values(by='ticket_id', ascending=False)
+
+            st.dataframe(df)
+    except Exception as e:
+        st.error(f"Error fetching ticket history: {e}")
 st.subheader("🔎 Enquire About a Ticket")
 
 ticket_input = st.text_input("Enter your Ticket ID (e.g., 100007):")
