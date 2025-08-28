@@ -5,6 +5,9 @@ from agents.feedback_handler import FeedbackHandlerAgent
 from agents.query_handler import QueryHandlerAgent
 import pandas as pd
 from dotenv import load_dotenv
+from agents import TicketManager
+from agents.ticket_manager import initialize_database
+
 
 # Load environment variables
 load_dotenv()
@@ -16,6 +19,8 @@ logging.basicConfig(filename='app.log', level=logging.INFO, format='%(asctime)s 
 classifier = ClassifierAgent()
 feedback_handler = FeedbackHandlerAgent()
 query_handler = QueryHandlerAgent()
+ # Always ensure DB schema is correct
+initialize_database()
 
 st.set_page_config(page_title="AI Customer Support Agent", layout="wide")
 st.title("🤖 AI-Powered Banking Customer Support Agent")
@@ -44,20 +49,7 @@ if st.button("Submit"):
         else:
             st.error("❗ Unable to classify message. Please try again.")
 
-def get_ticket_history(self):
-    rows = list(self.table.rows)
-
-    # Sort safely by ID
-    sorted_rows = sorted(rows, key=lambda x: x.get("id", 0), reverse=True)
-
-    # Ensure 'ticket_id' is added for display (derived from internal ID)
-    for row in sorted_rows:
-        if "id" in row:
-            row["ticket_id"] = 100000 + row["id"]
-        else:
-            row["ticket_id"] = "UNKNOWN"
-
-    return sorted_rows
+   
 st.markdown("---")
 if st.checkbox("Show Ticket History (from DB)"):
     try:
