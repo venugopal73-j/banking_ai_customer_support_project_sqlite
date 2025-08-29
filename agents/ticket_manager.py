@@ -24,8 +24,8 @@ class TicketManager:
 
         ticket_row = self.table.last_pk
         return 100000 + ticket_row if ticket_row else "UNKNOWN"
-    def initialize_database(db_path="tickets.db"):
-      if not os.path.exists(db_path):
+def initialize_database(db_path="tickets.db"):
+    if not os.path.exists(db_path):
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         cursor.execute("""
@@ -40,29 +40,57 @@ class TicketManager:
         conn.commit()
         conn.close()
 
+class TicketManager:
+    def __init__(self, db_path="tickets.db"):
+        self.db = Database(db_path)
+        self.table = self.db["tickets"]
+        self.db_path = db_path
+
+    def create_ticket(self, message, category):
+        created_at = datetime.utcnow().isoformat()
+        status = "open"
+
+        inserted = self.table.insert({
+            "message": message,
+            "category": category,
+            "created_at": created_at,
+            "status": status
+        }, alter=True)
+
+        ticket_row = self.table.last_pk
+        return 100000 + ticket_row if ticket_row else "UNKNOWN"
+
     def get_ticket_history(self):
-        rows = list(self.table.rows)
-        
-        # Safely sort by 'id'
-        sorted_rows = sorted(rows, key=lambda x: x.get("id", 0), reverse=True)
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM tickets")
+        rows = cursor.fetchall()
+        result = []
+        for row in rows:
+            ticket_id = 100000 + row[0] if row[0] else "UNKNOWN"
+            result.append({
+                "ticket_id": ticket_id,
+                "message": row[1],
+                "category": row[2],
+                "created_at": row[3],
+                "status": row[4]
+            })
+        conn.close()
+        return result
 
-        # Add 'ticket_id' field for display purposes
-        for row in sorted_rows:
-            if "id" in row:
-                row["ticket_id"] = 100000 + row["id"]
-            else:
-                row["ticket_id"] = "UNKNOWN"
-
-        return sorted_rows
-    def get_ticket_by_customer_id(self, customer_ticket_id):
-        actual_id = customer_ticket_id - 100000
-        try:
-            row = self.table.get(actual_id)
+    def get_ticket_by_customer_id(self, ticket_id):
+        internal_id = ticket_id - 100000
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM tickets WHERE id=?", (internal_id,))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
             return {
-                "ticket_id": customer_ticket_id,
-                "message": row["message"],
-                "created_at": row["created_at"],
-                "status": row["status"]
+                "ticket_id": ticket_id,
+                "message": row[1],
+                "category": row[2],
+                "created_at": row[3],
+                "status": row[4]
             }
-        except Exception as e:
-            return None
+        return None
