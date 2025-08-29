@@ -67,7 +67,7 @@ class TicketManager:
         rows = cursor.fetchall()
         result = []
         for row in rows:
-            ticket_id = 100000 + row[0] if row[0] else "UNKNOWN"
+            ticket_id = 100000 + int(row[0]) if row[0] is not None else "UNKNOWN"
             result.append({
                 "ticket_id": ticket_id,
                 "message": row[1],
