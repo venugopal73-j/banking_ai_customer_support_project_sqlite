@@ -16,9 +16,9 @@ load_dotenv()
 db_path = "tickets.db"
 backup_path = "tickets_backup.db"
 
-if os.path.exists(db_path) and not os.path.exists(backup_path):
-    shutil.copy(db_path, backup_path)
-    print("✅ Backup created at 'tickets_backup.db'")
+if os.path.exists("tickets.db") and not os.path.exists("tickets_backup.db"):
+    shutil.copy("tickets.db", "tickets_backup.db")
+    print("✅ Backup created: tickets_backup.db")
 else:
     print("⚠️ Backup skipped (already exists or DB missing)")
  # Always ensure DB schema is correct
