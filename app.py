@@ -1,5 +1,7 @@
 import streamlit as st
 import shutil
+import sqlite3
+
 import os
 import logging
 from agents.classifier_agent import ClassifierAgent
@@ -12,6 +14,38 @@ from agents.ticket_manager import initialize_database
 
 # Load environment variables
 load_dotenv()
+def rebuild_tickets_db_if_needed():
+    if os.path.exists("tickets.db"):
+        conn = sqlite3.connect("tickets.db")
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(tickets);")
+        columns = [col[1] for col in cursor.fetchall()]
+        conn.close()
+
+        if "id" not in columns:
+            print("🛠 Rebuilding 'tickets.db' with correct schema...")
+            os.remove("tickets.db")  # Dangerous only if no backup exists
+            conn = sqlite3.connect("tickets.db")
+            cursor = conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS tickets (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    message TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+            """)
+            conn.commit()
+            conn.close()
+            print("✅ Rebuilt 'tickets.db' with new schema.")
+        else:
+            print("✅ 'tickets.db' already has correct schema.")
+    else:
+        print("⚠️ 'tickets.db' not found. Nothing to fix.")
+
+# Run this before initializing DB
+rebuild_tickets_db_if_needed()
 # Backup before schema change
 db_path = "tickets.db"
 backup_path = "tickets_backup.db"
