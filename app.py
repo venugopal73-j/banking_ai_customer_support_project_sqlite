@@ -1,4 +1,6 @@
 import streamlit as st
+import shutil
+import os
 import logging
 from agents.classifier_agent import ClassifierAgent
 from agents.feedback_handler import FeedbackHandlerAgent
@@ -10,6 +12,17 @@ from agents.ticket_manager import initialize_database
 
 # Load environment variables
 load_dotenv()
+# Backup before schema change
+db_path = "tickets.db"
+backup_path = "tickets_backup.db"
+
+if os.path.exists(db_path) and not os.path.exists(backup_path):
+    shutil.copy(db_path, backup_path)
+    print("✅ Backup created at 'tickets_backup.db'")
+else:
+    print("⚠️ Backup skipped (already exists or DB missing)")
+ # Always ensure DB schema is correct
+initialize_database()
 
 # Setup logging
 logging.basicConfig(filename='app.log', level=logging.INFO, format='%(asctime)s - %(message)s')
@@ -18,8 +31,7 @@ logging.basicConfig(filename='app.log', level=logging.INFO, format='%(asctime)s 
 classifier = ClassifierAgent()
 feedback_handler = FeedbackHandlerAgent()
 query_handler = QueryHandlerAgent()
- # Always ensure DB schema is correct
-initialize_database()
+
 
 st.set_page_config(page_title="AI Customer Support Agent", layout="wide")
 st.title("🤖 AI-Powered Banking Customer Support Agent")
