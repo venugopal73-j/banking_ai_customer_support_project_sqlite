@@ -16,15 +16,16 @@ load_dotenv()
 db_path = "tickets.db"
 backup_path = "tickets_backup.db"
 
+# Debug print to check presence of files
+print("tickets.db exists:", os.path.exists("tickets.db"))
+print("tickets_backup.db exists:", os.path.exists("tickets_backup.db"))
+
+# One-time forced backup block
 if os.path.exists("tickets.db") and not os.path.exists("tickets_backup.db"):
     shutil.copy("tickets.db", "tickets_backup.db")
-    print("✅ Backup created: tickets_backup.db")
-    
+    print("✅ Forced backup created manually.")
 else:
     print("⚠️ Backup skipped (already exists or DB missing)")
-    print("tickets.db exists:", os.path.exists("tickets.db"))
-    print("tickets_backup.db exists:", os.path.exists("tickets_backup.db"))
- # Always ensure DB schema is correct
 initialize_database()
 
 # Setup logging
