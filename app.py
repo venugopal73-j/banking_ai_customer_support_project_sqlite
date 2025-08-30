@@ -8,49 +8,17 @@ from agents.feedback_handler import FeedbackHandlerAgent
 from agents.query_handler import QueryHandlerAgent
 import pandas as pd
 from dotenv import load_dotenv
+from agents.ticket_manager import initialize_database
 
 # Load environment variables
 load_dotenv()
 
-def rebuild_tickets_db_if_needed():
-    if os.path.exists("tickets.db"):
-        conn = sqlite3.connect("tickets.db")
-        cursor = conn.cursor()
-        cursor.execute("PRAGMA table_info(tickets);")
-        columns = [col[1] for col in cursor.fetchall()]
-        conn.close()
-
-        if "id" not in columns:
-            print("🛠 Rebuilding 'tickets.db' with correct schema...")
-            os.remove("tickets.db")  # Dangerous only if no backup exists
-            conn = sqlite3.connect("tickets.db")
-            cursor = conn.cursor()
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS tickets (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    message TEXT NOT NULL,
-                    category TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                );
-            """)
-            conn.commit()
-            conn.close()
-            print("✅ Rebuilt 'tickets.db' with new schema.")
-        else:
-            print("✅ 'tickets.db' already has correct schema.")
-    else:
-        print("⚠️ 'tickets.db' not found. Nothing to fix.")
-
-# Backup and schema setup
-rebuild_tickets_db_if_needed()
-
-# Backup DB if not already backed up
+# --- STEP 1: Backup before schema check ---
 db_path = "tickets.db"
 backup_path = "tickets_backup.db"
 
-print("tickets.db exists:", os.path.exists("tickets.db"))
-print("tickets_backup.db exists:", os.path.exists("tickets_backup.db"))
+print("tickets.db exists:", os.path.exists(db_path))
+print("tickets_backup.db exists:", os.path.exists(backup_path))
 
 if os.path.exists(db_path) and not os.path.exists(backup_path):
     shutil.copy(db_path, backup_path)
@@ -58,15 +26,18 @@ if os.path.exists(db_path) and not os.path.exists(backup_path):
 else:
     print("⚠️ Backup skipped (already exists or DB missing)")
 
-# Setup logging
+# --- STEP 2: Validate schema (will raise if 'id' column is missing) ---
+initialize_database()  # Only validates, does not delete or reset DB
+
+# --- STEP 3: Logging setup ---
 logging.basicConfig(filename='app.log', level=logging.INFO, format='%(asctime)s - %(message)s')
 
-# Initialize agents
+# --- STEP 4: Agent setup ---
 classifier = ClassifierAgent()
 feedback_handler = FeedbackHandlerAgent()
 query_handler = QueryHandlerAgent()
 
-# Streamlit UI
+# --- STEP 5: Streamlit UI ---
 st.set_page_config(page_title="AI Customer Support Agent", layout="wide")
 st.title("🤖 AI-Powered Banking Customer Support Agent")
 st.markdown("Enter your message and let the AI classify, respond, and manage tickets!")
@@ -94,7 +65,7 @@ if st.button("Submit"):
         else:
             st.error("❗ Unable to classify message. Please try again.")
 
-# Ticket history view
+# --- Ticket History Section ---
 st.markdown("---")
 if st.checkbox("Show Ticket History (from DB)"):
     try:
@@ -103,17 +74,19 @@ if st.checkbox("Show Ticket History (from DB)"):
             st.info("No tickets found.")
         else:
             df = pd.DataFrame(history)
+
             expected_columns = ['ticket_id', 'message', 'category', 'status', 'created_at']
             for col in expected_columns:
                 if col not in df.columns:
                     df[col] = "N/A"
+
             df = df[expected_columns]
             df = df.sort_values(by='ticket_id', ascending=False)
             st.dataframe(df)
     except Exception as e:
         st.error(f"Error fetching ticket history: {e}")
 
-# Ticket inquiry view
+# --- Enquiry Section ---
 st.subheader("🔎 Enquire About a Ticket")
 ticket_input = st.text_input("Enter your Ticket ID (e.g., 100007):")
 
@@ -122,13 +95,11 @@ if st.button("Check Ticket Status"):
         st.warning("Please enter a valid numeric Ticket ID.")
     else:
         ticket_id = int(ticket_input.strip())
-        try:
-            ticket_info = query_handler.ticket_manager.get_ticket_by_customer_id(ticket_id)
-            if ticket_info:
-                st.markdown(f"**📝 Message:** {ticket_info['message']}")
-                st.markdown(f"**📅 Created At:** {ticket_info['created_at']}")
-                st.markdown(f"**📌 Status:** {ticket_info['status']}")
-            else:
-                st.error("❗ Ticket not found. Please check the ID and try again.")
-        except Exception as e:
-            st.error(f"Error checking ticket: {e}")
+        ticket_info = query_handler.ticket_manager.get_ticket_by_customer_id(ticket_id)
+
+        if ticket_info:
+            st.markdown(f"**📝 Message:** {ticket_info['message']}")
+            st.markdown(f"**📅 Created At:** {ticket_info['created_at']}")
+            st.markdown(f"**📌 Status:** {ticket_info['status']}")
+        else:
+            st.error("❗ Ticket not found. Please check the ID and try again.")
