@@ -19,6 +19,8 @@ backup_path = "tickets_backup.db"
 if os.path.exists("tickets.db") and not os.path.exists("tickets_backup.db"):
     shutil.copy("tickets.db", "tickets_backup.db")
     print("✅ Backup created: tickets_backup.db")
+    print("tickets.db exists:", os.path.exists("tickets.db"))
+    print("tickets_backup.db exists:", os.path.exists("tickets_backup.db"))
 else:
     print("⚠️ Backup skipped (already exists or DB missing)")
  # Always ensure DB schema is correct
